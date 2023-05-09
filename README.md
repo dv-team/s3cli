@@ -4,6 +4,24 @@
 
 ### Run
 
+```
+Description:
+  List and download files from an S3 endpoint.
+
+Usage:
+  s3-download-client [command] [options]
+
+Options:
+  --version       Show version information
+  -?, -h, --help  Show help and usage information
+
+Commands:
+  list      List all objects in an S3 storage
+  upload    Download one object from a S3 storage
+  download  Download one object (referenced by a fully qualified object key or a prefix plus object-key) from a S3 storage
+  delete    Remove one object from a S3 storage
+```
+
 List files
 
 ```
@@ -33,5 +51,5 @@ dotnet run download --local-path <localfile> --prefix rechnungen/ --object-key <
 Build a self-containing exe:
 
 ```
-dotnet publish -c Release
+dotnet publish -c Release -r win10-x64 -p:PublishSingleFile=true --self-contained false
 ```

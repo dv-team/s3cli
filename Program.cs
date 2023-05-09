@@ -18,7 +18,7 @@ class CommandBuilder
     private readonly OptionDetails _secretkeyOption = new(Name: "--secret-key", Description: "The AWS secret key.");
     private readonly OptionDetails _bucketOption = new(Name: "--bucket", Description: "The S3 Bucket.");
     private readonly OptionDetails _prefixOption = new(Name: "--prefix", Description: "The prefix of the files.");
-    private readonly OptionDetails _objectKeyOption = new(Name: "--objectKey", Description: "The object key (this is what a file name is called in an S3 environment).");
+    private readonly OptionDetails _objectKeyOption = new(Name: "--object-key", Description: "The object key (this is what a file name is called in an S3 environment).");
     
     public CommandBuilder(string[] args) {
         RootCommand rootCommand = new RootCommand(description: "List and download files from an S3 endpoint.");
@@ -39,7 +39,7 @@ class CommandBuilder
         var accesskeyOption = AddOption<string>(command, _accessKeyOption);
         var secretkeyOption = AddOption<string>(command, _secretkeyOption);
         var bucketOption = AddOption<string>(command, _bucketOption);
-        var prefixOption = AddOption<string?>(command, _prefixOption, isRequired: false);
+        var prefixOption = AddOption<string?>(command, _prefixOption);
 
         command.SetHandler((string serviceUrl, string awsAccessKeyId, string awsSecretKeyId, string bucket, string? prefix) =>
         {
@@ -51,6 +51,7 @@ class CommandBuilder
                 request.Prefix = prefix;
                 var objects = client.ListObjectsAsync(request).GetAwaiter().GetResult();
 
+                var filenames = new LinkedList<string>();
                 foreach (var o in objects.S3Objects) {
                     if (o.Key.EndsWith("/"))
                     {
@@ -62,7 +63,12 @@ class CommandBuilder
                     {
                         filename = filename.Substring(prefix.Length);
                     }
-                    
+
+                    filenames.AddLast(filename);
+                }
+                
+                foreach (var filename in filenames)
+                {
                     Console.WriteLine(filename);
                 }
             } catch (Exception e) {
@@ -78,21 +84,20 @@ class CommandBuilder
     {
         var command = new Command("upload", "Download one object from a S3 storage");
 
-        var pathOption = AddOption<string>(command, new OptionDetails(Name: "--local-path", Description: "The local path to the file to be uploaded."), isRequired: true);
-        var objectKeyOption = AddOption<string?>(command, _objectKeyOption);
-        var endpointOption = AddOption<string>(command, this._endpointOption, isRequired: true);
-        var accesskeyOption = AddOption<string>(command, _accessKeyOption, isRequired: true);
-        var secretkeyOption = AddOption<string>(command, _secretkeyOption, isRequired: true);
-        var bucketOption = AddOption<string>(command, _bucketOption, isRequired: true);
+        var pathOption = AddOption<string>(command, new OptionDetails(Name: "--local-path", Description: "The local path to the file to be uploaded."));
+        var objectKeyOption = AddOption<string>(command, _objectKeyOption);
+        var endpointOption = AddOption<string>(command, this._endpointOption);
+        var accesskeyOption = AddOption<string>(command, _accessKeyOption);
+        var secretkeyOption = AddOption<string>(command, _secretkeyOption);
+        var bucketOption = AddOption<string>(command, _bucketOption);
         var prefixOption = AddOption<string?>(command, _prefixOption);
 
-        command.SetHandler((string serviceUrl, string awsAccessKeyId, string awsSecretKeyId, string bucket, string? prefix, string path, string? objectKey) =>
+        command.SetHandler((string serviceUrl, string awsAccessKeyId, string awsSecretKeyId, string bucket, string? prefix, string path, string objectKey) =>
         {
             var client = GetClient(serviceUrl, awsAccessKeyId, awsSecretKeyId);
             var bucketName = bucket;
-            var request = new ListObjectsRequest();
-            request.BucketName = bucketName;
-            request.Prefix = prefix;
+            var fullObjectPath = ConcatPaths(prefix, objectKey);
+            Console.WriteLine($"Upload {path} to {fullObjectPath}");
 
             if (!ObjectExists(client, bucketName, path)) {
                 Environment.Exit(ObjectDoesNotExist);
@@ -100,8 +105,7 @@ class CommandBuilder
 
             try {
                 var transfer = new TransferUtility(client);
-                var filename = objectKey ?? $"/{path}".Split("/").Last();
-                transfer.Upload(filename, bucketName, path);
+                transfer.Upload(path, bucketName, objectKey);
             } catch (Exception e) {
                 Console.WriteLine($"ERROR: {e.Message}\n");
                 Environment.Exit(UnknownError);
@@ -115,30 +119,28 @@ class CommandBuilder
     {
         var command = new Command("download", "Download one object (referenced by a fully qualified object key or a prefix plus object-key) from a S3 storage");
 
-        var pathOption = AddOption<string>(command, new(Name: "--local-path", Description: "The local path to the download target."), isRequired: true);
-        var objectKeyOption = AddOption<string?>(command, _objectKeyOption, isRequired: true, defaultValue: null);
-        var endpointOption = AddOption<string>(command, _endpointOption, isRequired: true);
-        var accesskeyOption = AddOption<string>(command, _accessKeyOption, isRequired: true);
-        var secretkeyOption = AddOption<string>(command, _secretkeyOption, isRequired: true);
-        var bucketOption = AddOption<string>(command, _bucketOption, isRequired: true);
-        var prefixOption = AddOption<string?>(command, _prefixOption, isRequired: false, defaultValue: null);
+        var pathOption = AddOption<string>(command, new(Name: "--local-path", Description: "The local path to the download target."));
+        var objectKeyOption = AddOption<string>(command, _objectKeyOption);
+        var endpointOption = AddOption<string>(command, _endpointOption);
+        var accesskeyOption = AddOption<string>(command, _accessKeyOption);
+        var secretkeyOption = AddOption<string>(command, _secretkeyOption);
+        var bucketOption = AddOption<string>(command, _bucketOption);
+        var prefixOption = AddOption<string?>(command, _prefixOption, defaultValue: null);
 
         command.SetHandler((serviceUrl, awsAccessKeyId, awsSecretKeyId, bucket, prefix, path, objectKey) =>
         {
             var client = GetClient(serviceUrl, awsAccessKeyId, awsSecretKeyId);
             var bucketName = bucket;
-            var request = new ListObjectsRequest();
-            request.BucketName = bucketName;
-            request.Prefix = prefix;
+            var fullObjectPath = ConcatPaths(prefix, objectKey);
+            Console.WriteLine($"Download {fullObjectPath} to {path}");
 
-            if (!ObjectExists(client, bucketName, path)) {
+            if (!ObjectExists(client, bucketName, fullObjectPath)) {
                 Environment.Exit(ObjectDoesNotExist);
             }
 
             try {
                 var transfer = new TransferUtility(client);
-                var filename = objectKey ?? $"/{path}".Split("/").Last();
-                transfer.Download(filename, bucketName, path);
+                transfer.Download(path, bucketName, fullObjectPath);
             } catch (Exception e) {
                 Console.WriteLine($"ERROR: {e.Message}\n");
                 Environment.Exit(UnknownError);
@@ -152,27 +154,26 @@ class CommandBuilder
     {
         var command = new Command("delete", "Remove one object from a S3 storage");
         
-        var objectKeyOption = AddOption<string>(command, _objectKeyOption, isRequired: true);
-        var endpointOption = AddOption<string>(command, _endpointOption, isRequired: true);
-        var accesskeyOption = AddOption<string>(command, _accessKeyOption, isRequired: true);
-        var secretkeyOption = AddOption<string>(command, _secretkeyOption, isRequired: true);
-        var bucketOption = AddOption<string>(command, _bucketOption, isRequired: true);
-        var prefixOption = AddOption<string?>(command, _prefixOption, isRequired: false);
+        var objectKeyOption = AddOption<string>(command, _objectKeyOption);
+        var endpointOption = AddOption<string>(command, _endpointOption);
+        var accesskeyOption = AddOption<string>(command, _accessKeyOption);
+        var secretkeyOption = AddOption<string>(command, _secretkeyOption);
+        var bucketOption = AddOption<string>(command, _bucketOption);
+        var prefixOption = AddOption<string?>(command, _prefixOption);
 
         command.SetHandler((serviceUrl, awsAccessKeyId, awsSecretKeyId, bucket, prefix, objectKey) =>
         {
             var client = GetClient(serviceUrl, awsAccessKeyId, awsSecretKeyId);
             var bucketName = bucket;
-            var request = new ListObjectsRequest();
-            request.BucketName = bucketName;
-            request.Prefix = prefix;
+            var fullObjectPath = ConcatPaths(prefix, objectKey);
+            Console.WriteLine($"Delete {fullObjectPath}");
 
-            if (!ObjectExists(client, bucketName, objectKey)) {
+            if (!ObjectExists(client, bucketName, fullObjectPath)) {
                 Environment.Exit(ObjectDoesNotExist);
             }
 
             try {
-                client.DeleteObjectAsync(bucketName, objectKey).GetAwaiter().GetResult();
+                client.DeleteObjectAsync(bucketName, fullObjectPath).GetAwaiter().GetResult();
             } catch (Exception e) {
                 Console.WriteLine($"ERROR: {e.Message}\n");
                 Environment.Exit(UnknownError);
@@ -200,20 +201,29 @@ class CommandBuilder
         return new AmazonS3Client(awsAccessKeyId, awsSecretKeyId, config);
     }
 
-    private Option<T> AddOption<T>(Command command, OptionDetails optionDetails, bool isRequired = true)
+    private Option<T> AddOption<T>(Command command, OptionDetails optionDetails)
     {
         var option = new Option<T>(name: optionDetails.Name, description: optionDetails.Description);
-        option.IsRequired = isRequired;
         command.AddOption(option);
         return option;
     }
 
-    private Option<T> AddOption<T>(Command command, OptionDetails optionDetails, bool isRequired, T defaultValue)
+    private Option<T> AddOption<T>(Command command, OptionDetails optionDetails, T defaultValue)
     {
         var option = new Option<T>(name: optionDetails.Name, description: optionDetails.Description, getDefaultValue: () => defaultValue);
-        option.IsRequired = isRequired;
         command.AddOption(option);
         return option;
+    }
+
+    private string ConcatPaths(string? prefix, string objectKey)
+    {
+        var normalizedPrefix = (prefix ?? "").TrimEnd('/');
+        if (normalizedPrefix == "")
+        {
+            return objectKey;
+        }
+
+        return $"{normalizedPrefix}/{objectKey.TrimStart('/')}";
     }
 
     public record OptionDetails(string Name, string Description);
