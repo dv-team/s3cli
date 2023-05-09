@@ -7,25 +7,25 @@
 List files
 
 ```
-dotnet run list --prefix rechnungen/ --service-url https://<service-url> --access-key-id <access-key> --secret-key-id <secret-key> --bucket-name <bucket-name>
+dotnet run list --prefix rechnungen/ --endpoint https://<service-url> --bucket <bucket-name> --access-key <access-key> --secret-key <secret-key>
 ```
 
 Object key exists?
 
 ```
-dotnet run has --object-key <remotefile> --service-url https://<service-url> --access-key-id <access-key> --secret-key-id <secret-key> --bucket-name <bucket-name>
+dotnet run has --object-key <remotefilename> --prefix rechnungen/ --endpoint https://<service-url> --bucket <bucket-name> --access-key <access-key> --secret-key <secret-key>
 ```
 
 Download a file
 
 ```
-dotnet run upload --local-filename <localfile> --object-key <remotefile> --service-url https://<service-url> --access-key-id <access-key> --secret-key-id <secret-key> --bucket-name <bucket-name>
+dotnet run upload --local-path <localfilepath> --object-key <remotefile> --endpoint https://<service-url> --bucket <bucket-name> --access-key <access-key> --secret-key <secret-key>
 ```
 
 Download a file
 
 ```
-dotnet run download --object-key <remotefile> --local-filename <localfile> --service-url https://<service-url> --access-key-id <access-key> --secret-key-id <secret-key> --bucket-name <bucket-name>
+dotnet run download --object-key <remotefile> --local-path <localfile> --endpoint https://<service-url> --bucket <bucket-name> --access-key <access-key> --secret-key <secret-key>
 ```
 
 ### Build
