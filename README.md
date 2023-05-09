@@ -19,13 +19,13 @@ dotnet run has --object-key <remotefilename> --prefix rechnungen/ --endpoint htt
 Download a file
 
 ```
-dotnet run upload --local-path <localfilepath> --object-key <remotefile> --endpoint https://<service-url> --bucket <bucket-name> --access-key <access-key> --secret-key <secret-key>
+dotnet run upload --local-path <localfilepath> --prefix rechnungen/ --object-key <remotefile> --endpoint https://<service-url> --bucket <bucket-name> --access-key <access-key> --secret-key <secret-key>
 ```
 
 Download a file
 
 ```
-dotnet run download --object-key <remotefile> --local-path <localfile> --endpoint https://<service-url> --bucket <bucket-name> --access-key <access-key> --secret-key <secret-key>
+dotnet run download --local-path <localfile> --prefix rechnungen/ --object-key <remotefile> --endpoint https://<service-url> --bucket <bucket-name> --access-key <access-key> --secret-key <secret-key>
 ```
 
 ### Build
