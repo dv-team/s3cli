@@ -34,7 +34,7 @@ Object key exists?
 dotnet run has --object-key <remotefilename> --prefix rechnungen/ --endpoint https://<service-url> --bucket <bucket-name> --access-key <access-key> --secret-key <secret-key>
 ```
 
-Download a file
+Upload a file
 
 ```
 dotnet run upload --local-path <localfilepath> --prefix rechnungen/ --object-key <remotefile> --endpoint https://<service-url> --bucket <bucket-name> --access-key <access-key> --secret-key <secret-key>
