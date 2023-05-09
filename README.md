@@ -28,12 +28,6 @@ List files
 dotnet run list --prefix rechnungen/ --endpoint https://<service-url> --bucket <bucket-name> --access-key <access-key> --secret-key <secret-key>
 ```
 
-Object key exists?
-
-```
-dotnet run has --object-key <remotefilename> --prefix rechnungen/ --endpoint https://<service-url> --bucket <bucket-name> --access-key <access-key> --secret-key <secret-key>
-```
-
 Upload a file
 
 ```
@@ -44,6 +38,12 @@ Download a file
 
 ```
 dotnet run download --local-path <localfile> --prefix rechnungen/ --object-key <remotefile> --endpoint https://<service-url> --bucket <bucket-name> --access-key <access-key> --secret-key <secret-key>
+```
+
+Delete object?
+
+```
+dotnet run delete --prefix rechnungen/ --object-key <remotefilename> --endpoint https://<service-url> --bucket <bucket-name> --access-key <access-key> --secret-key <secret-key>
 ```
 
 ### Build
